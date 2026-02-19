@@ -1,0 +1,51 @@
+{
+  "version": "0.1",
+  "final_vps": {
+    "pqs_weight": 0.55,
+    "eps_weight": 0.45
+  },
+  "pqs": {
+    "hook_strength": 20,
+    "time_to_value": 12,
+    "pacing_density": 10,
+    "rewatch_loop_design": 8,
+    "caption_readability": 8,
+    "audio_strategy_fit": 7,
+    "cta_quality": 6,
+    "metadata_relevance": 7,
+    "originality_authenticity": 10,
+    "technical_quality": 7,
+    "safety_compliance": 5
+  },
+  "eps": {
+    "early_retention": 30,
+    "completion_rate": 15,
+    "rewatch_rate": 10,
+    "share_rate": 15,
+    "save_rate": 8,
+    "comment_quality_rate": 8,
+    "negative_feedback": -12,
+    "follower_conversion": 6,
+    "profile_action_ctr": 5,
+    "velocity": 15
+  },
+  "platform_multipliers": {
+    "tiktok": {
+      "retention": 1.2,
+      "completion": 1.15,
+      "share": 1.1,
+      "metadata_audio": 1.05
+    },
+    "shorts": {
+      "retention": 1.2,
+      "satisfaction": 1.15,
+      "metadata": 1.1
+    },
+    "reels": {
+      "watch_time": 1.15,
+      "shares_sends": 1.2,
+      "originality": 1.15,
+      "follow_conversion": 1.1
+    }
+  }
+}

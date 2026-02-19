@@ -121,7 +121,7 @@ def _text_overlay(project: Project, edit: Edit) -> Project:
         if scene.id == edit.target_scene_id:
             scene.overlays.append(TextOverlay(
                 text=edit.params.get("text", ""),
-                position=edit.params.get("position", "center"),
+                position=edit.params.get("position", "bottom"),
                 start_offset=edit.params.get("start_offset", 0),
                 duration=edit.params.get("duration", 0),
                 font_size=edit.params.get("font_size", 48),

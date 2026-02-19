@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vidkit.local/schemas/score_report.schema.json",
+  "title": "ScoreReport",
+  "type": "object",
+  "required": ["pqs", "eps", "vps", "feature_contributions", "failed_gates", "recommendations"],
+  "properties": {
+    "pqs": {"type": "number", "minimum": 0, "maximum": 100},
+    "eps": {"type": "number", "minimum": 0, "maximum": 100},
+    "vps": {"type": "number", "minimum": 0, "maximum": 100},
+    "feature_contributions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["feature", "value", "weight", "contribution"],
+        "properties": {
+          "feature": {"type": "string"},
+          "value": {"type": "number"},
+          "weight": {"type": "number"},
+          "contribution": {"type": "number"}
+        }
+      }
+    },
+    "failed_gates": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["priority", "action", "expected_lift_range"],
+        "properties": {
+          "priority": {"type": "string", "enum": ["high", "medium", "low"]},
+          "action": {"type": "string"},
+          "expected_lift_range": {"type": "string"}
+        }
+      }
+    }
+  }
+}

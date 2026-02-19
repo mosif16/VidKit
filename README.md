@@ -62,6 +62,18 @@ curl http://127.0.0.1:8899/api/health
 5. `POST /api/project/{id}/voiceover`
 6. `POST /api/project/{id}/render`
 
+## AI brain + vision defaults
+
+VidKit now defaults to stronger local AI settings:
+- Vision: `qwen3-vl:latest` (Ollama)
+- Vision fallbacks: `qwen3-vl:8b,qwen2.5vl:latest,qwen2.5vl:7b,minicpm-v:latest`
+- Whisper transcription default: `medium`
+
+Override via env vars:
+- `VISION_MODEL`
+- `VISION_FALLBACK_MODELS`
+- `WHISPER_MODEL`
+
 ## Agent Reel Engine API (M1 dry-run)
 
 New endpoint:
@@ -86,11 +98,28 @@ Example request:
 ```
 
 Response includes:
-- `plan` (hook/cuts/captions/cta)
-- `score` (heuristic virality score)
+- `plan` (selected best hook/cuts/captions/cta)
+- `candidates` (generated variants considered for ranking)
+- `score` (heuristic virality score for selected plan)
 - `execution` (pipeline stage statuses + TODO steps)
 
 See `docs/AGENT_REEL_ENGINE_PLAN.md` for milestone roadmap (M1–M4).
+
+## Viral scoring config + contracts (v0.1)
+
+VidKit now includes implementation-ready scoring artifacts:
+
+- Config: `backend/config/viral_scoring_weights.json`
+- Schemas:
+  - `backend/schemas/score_report.schema.json`
+  - `backend/schemas/edit_suggestions.schema.json`
+- Spec: `docs/specs/viral_scoring_v0_1.md`
+
+`POST /api/agent/reel` now returns two additional payloads for pipeline compatibility:
+- `score_report` (PQS/EPS/VPS + contributions + recommendations)
+- `edit_suggestions` (ordered timestamp-level action hints)
+
+If scoring config is missing or malformed, backend falls back to safe defaults.
 
 ## Engineering Rules
 

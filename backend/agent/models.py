@@ -13,6 +13,7 @@ class AgentReelRequest(BaseModel):
     objective: str = Field(default="maximize watch-time and shares")
     duration_target_sec: int = Field(default=20, ge=8, le=60)
     tone: str = Field(default="high-energy")
+    candidates: int = Field(default=3, ge=1, le=5)
 
 
 class HookPlan(BaseModel):
@@ -34,6 +35,7 @@ class CutPlan(BaseModel):
 
 
 class ReelPlan(BaseModel):
+    id: str = "base"
     template: str
     platform: Platform
     objective: str
@@ -50,7 +52,39 @@ class PlanScore(BaseModel):
     pacing: int
     caption_clarity: int
     cta_strength: int
-    notes: list[str] = []
+    notes: list[str] = Field(default_factory=list)
+
+
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float
+    weight: float
+    contribution: float
+
+
+class Recommendation(BaseModel):
+    priority: Literal["high", "medium", "low"]
+    action: str
+    expected_lift_range: str
+
+
+class ScoreReport(BaseModel):
+    pqs: float
+    eps: float
+    vps: float
+    feature_contributions: list[FeatureContribution]
+    failed_gates: list[str] = Field(default_factory=list)
+    recommendations: list[Recommendation] = Field(default_factory=list)
+
+
+class EditSuggestion(BaseModel):
+    priority: Literal["high", "medium", "low"]
+    action: str
+    timestamp_hint: str
+
+
+class EditSuggestions(BaseModel):
+    suggestions: list[EditSuggestion] = Field(default_factory=list)
 
 
 class PipelineStageResult(BaseModel):
@@ -69,4 +103,7 @@ class AgentReelResponse(BaseModel):
     status: Literal["ok"] = "ok"
     plan: ReelPlan
     score: PlanScore
+    score_report: ScoreReport
+    edit_suggestions: EditSuggestions
+    candidates: list[ReelPlan] = Field(default_factory=list)
     execution: ExecutionReport

@@ -40,6 +40,7 @@ async def render_project(project_id: str, req: RenderRequest, background_tasks: 
     output_path = os.path.join(PROJECTS_DIR, proj.id, filename)
 
     proj.status = "rendering"
+    proj.error = ""
     projects[project_id] = proj
 
     burn_captions = req.captions
@@ -50,6 +51,7 @@ async def render_project(project_id: str, req: RenderRequest, background_tasks: 
             render(proj, output_path, preset=preset,
                    burn_captions=burn_captions, caption_style=cap_style)
             proj.status = "done"
+            proj.error = ""
         except Exception as e:
             proj.status = "error"
             proj.error = str(e)

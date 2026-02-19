@@ -3,7 +3,7 @@
 Format based on Hormozi/CapCut viral caption standard:
 - 1-2 words at a time, ALL CAPS
 - Large bold font (~1/5 of screen width per word)
-- Centered at ~40% from top (safe zone: avoid top 15% and bottom 20%)
+- Bottom-safe placement by default (~82-86% from top) to sit in letterbox/black-bar area when possible
 - Rounded background pill behind text
 - Active word highlighted in accent color
 - Strong shadow/outline for readability on any background
@@ -19,7 +19,7 @@ STYLES = {
     "hormozi": {
         "fontsize_pct": 0.09,      # font size as % of frame height
         "words_per_group": 2,       # 1-2 words shown at a time
-        "y_pct": 0.42,              # vertical center position (% from top)
+        "y_pct": 0.84,              # bottom-safe position (% from top)
         "text_color": (255, 255, 255),
         "highlight_color": (0, 255, 136),  # bright green highlight
         "bg_color": (0, 0, 0, 180),       # semi-transparent black pill
@@ -32,7 +32,7 @@ STYLES = {
     "bold": {
         "fontsize_pct": 0.08,
         "words_per_group": 2,
-        "y_pct": 0.42,
+        "y_pct": 0.84,
         "text_color": (255, 255, 255),
         "highlight_color": (255, 220, 0),  # yellow highlight
         "bg_color": (0, 0, 0, 200),
@@ -58,7 +58,7 @@ STYLES = {
     "default": {
         "fontsize_pct": 0.08,
         "words_per_group": 2,
-        "y_pct": 0.42,
+        "y_pct": 0.84,
         "text_color": (255, 255, 255),
         "highlight_color": (255, 220, 0),
         "bg_color": (0, 0, 0, 180),

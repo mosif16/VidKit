@@ -1,6 +1,7 @@
 """FFmpeg render engine — builds and executes ffmpeg commands from scene map."""
 from __future__ import annotations
 import subprocess, os, tempfile, math
+from functools import lru_cache
 from backend.models import Project, Scene, RenderPreset
 
 
@@ -33,16 +34,27 @@ def _build_atempo_chain(speed: float) -> list[str]:
     return filters
 
 
+@lru_cache(maxsize=1)
+def _drawtext_supported() -> bool:
+    """Check if ffmpeg has drawtext support."""
+    try:
+        res = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True, timeout=10)
+        out = (res.stdout or "") + (res.stderr or "")
+        return "drawtext" in out
+    except Exception:
+        return False
+
+
 def _build_text_filter(overlay, scene_duration: float) -> str:
     """Build ffmpeg drawtext filter for a text overlay."""
     pos_map = {
         "center": "(w-text_w)/2:(h-text_h)/2",
         "top": "(w-text_w)/2:h*0.08",
-        "bottom": "(w-text_w)/2:h*0.88",
+        "bottom": "(w-text_w)/2:h*0.82",
         "top-left": "w*0.05:h*0.08",
         "top-right": "w*0.95-text_w:h*0.08",
-        "bottom-left": "w*0.05:h*0.88",
-        "bottom-right": "w*0.95-text_w:h*0.88",
+        "bottom-left": "w*0.05:h*0.82",
+        "bottom-right": "w*0.95-text_w:h*0.82",
     }
     xy = pos_map.get(overlay.position, pos_map["center"])
     x, y = xy.split(":")
@@ -59,7 +71,7 @@ def _build_text_filter(overlay, scene_duration: float) -> str:
     )
 
 
-def _extract_segment(scene: Scene, source_path: str, output_path: str) -> bool:
+def _extract_segment(scene: Scene, source_path: str, output_path: str, allow_text: bool = True) -> bool:
     """Extract and process a single scene segment."""
     has_speed = abs(scene.speed - 1.0) > 0.01
 
@@ -79,8 +91,9 @@ def _extract_segment(scene: Scene, source_path: str, output_path: str) -> bool:
         afilters.extend(_build_atempo_chain(scene.speed))
 
     # Text overlays
-    for overlay in scene.overlays:
-        vfilters.append(_build_text_filter(overlay, scene.duration))
+    if allow_text:
+        for overlay in scene.overlays:
+            vfilters.append(_build_text_filter(overlay, scene.duration))
 
     # Fade in transition
     if scene.transition_in == "fade":
@@ -143,12 +156,16 @@ def render(
         # Extract each scene as a segment
         segment_paths = []
         total = len(project.scenes)
+        text_available = _drawtext_supported()
+        if not text_available and any(scene.overlays for scene in project.scenes) and on_progress:
+            on_progress("Warning: ffmpeg drawtext filter unavailable; rendering without text overlays.")
+
         for i, scene in enumerate(project.scenes):
             if on_progress:
                 on_progress(f"Processing scene {i+1}/{total}...")
 
             seg_path = os.path.join(segments_dir, f"seg_{i:04d}.mp4")
-            success = _extract_segment(scene, project.source_path, seg_path)
+            success = _extract_segment(scene, project.source_path, seg_path, allow_text=text_available)
             if success and os.path.exists(seg_path):
                 segment_paths.append(seg_path)
 
@@ -281,12 +298,54 @@ def render(
             voice_duration = _probe_duration(project.voiceover_path)
             target_duration = video_duration
 
-            # Keep output tightly synced to the visual timeline.
-            # If voiceover is longer, compress it to fit instead of trailing after video.
+            # Keep narration natural: do not aggressively time-warp voice.
+            # Policy:
+            # - max voice speed-up: 1.08x
+            # - max voice slow-down: 0.92x
+            # - if mismatch is larger, extend video by freezing last frame
+            #   so voice can remain natural.
+            max_speedup = 1.08
+            min_slowdown = 0.92
+
+            input_video_path = output_path
+            required_ratio = (voice_duration / video_duration) if video_duration > 0 else 1.0
+
+            if required_ratio > max_speedup:
+                # Voice is much longer than picture. Extend picture duration.
+                extra = voice_duration - video_duration
+                if extra > 0.03:
+                    extended_path = os.path.join(temp_dir, "extended_for_voice.mp4")
+                    extend_cmd = [
+                        "ffmpeg", "-y",
+                        "-i", output_path,
+                        "-vf", f"tpad=stop_mode=clone:stop_duration={extra}",
+                        "-af", "apad",
+                        "-t", str(voice_duration),
+                        "-c:v", "h264_videotoolbox", "-q:v", "65",
+                        "-c:a", "aac", "-b:a", "192k",
+                        extended_path,
+                    ]
+                    ext = subprocess.run(extend_cmd, capture_output=True, text=True, timeout=300)
+                    if ext.returncode != 0:
+                        extend_cmd_sw = [c if c != "h264_videotoolbox" else "libx264" for c in extend_cmd]
+                        extend_cmd_sw = [c if c != "65" else "23" for c in extend_cmd_sw]
+                        ext = subprocess.run(extend_cmd_sw, capture_output=True, text=True, timeout=300)
+                    if ext.returncode == 0 and os.path.exists(extended_path):
+                        input_video_path = extended_path
+                        video_duration = max(_probe_duration(input_video_path), video_duration)
+
+            target_duration = max(video_duration, 0.01)
+            ratio_after_extension = (voice_duration / target_duration) if target_duration > 0 else 1.0
+
             voice_chain = [f"volume={vo_vol}"]
-            if voice_duration > video_duration + 0.03:
-                ratio = voice_duration / video_duration
-                voice_chain.extend(_build_atempo_chain(ratio))
+            # only apply gentle time adjustment in the natural-sounding range
+            if ratio_after_extension > max_speedup:
+                voice_chain.extend(_build_atempo_chain(max_speedup))
+            elif ratio_after_extension < min_slowdown:
+                voice_chain.extend(_build_atempo_chain(min_slowdown))
+            elif abs(ratio_after_extension - 1.0) > 0.015:
+                voice_chain.extend(_build_atempo_chain(ratio_after_extension))
+
             voice_chain.extend(["apad", f"atrim=0:{target_duration}"])
             voice_filter = ",".join(voice_chain)
 
@@ -301,7 +360,7 @@ def render(
 
             vo_cmd = [
                 "ffmpeg", "-y",
-                "-i", output_path,
+                "-i", input_video_path,
                 "-i", project.voiceover_path,
                 "-filter_complex", filter_graph,
                 "-map", "0:v", "-map", "[aout]",

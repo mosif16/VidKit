@@ -4,62 +4,84 @@ import base64, json, httpx, os
 from backend.models import SceneType
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-VISION_MODEL = os.getenv("VISION_MODEL", "minicpm-v")
+VISION_MODEL = os.getenv("VISION_MODEL", "qwen3-vl:latest")
+VISION_FALLBACK_MODELS = [
+    m.strip() for m in os.getenv("VISION_FALLBACK_MODELS", "qwen3-vl:8b,qwen2.5vl:latest,qwen2.5vl:7b,minicpm-v:latest").split(",") if m.strip()
+]
 
-SCENE_ANALYSIS_PROMPT = """Analyze this video frame. Respond in JSON only, no other text:
+SCENE_ANALYSIS_PROMPT = """Analyze this video frame for short-form editing decisions.
+Respond in STRICT JSON only (no markdown):
 {
   "scene_type": "talking_head" | "screen_recording" | "broll" | "text_slide" | "dead_air" | "unknown",
-  "description": "brief description of what's happening",
-  "has_speech": true/false (is someone talking or about to talk?),
-  "energy": 0.0-1.0 (how visually dynamic/interesting is this frame?),
-  "quality_score": 0.0-1.0 (image quality, lighting, focus),
-  "text_on_screen": "any readable text, or empty string"
+  "description": "brief description of what is happening",
+  "has_speech": true/false,
+  "energy": 0.0-1.0,
+  "quality_score": 0.0-1.0,
+  "text_on_screen": "readable text or empty string",
+  "hook_potential": 0.0-1.0,
+  "visual_novelty": 0.0-1.0,
+  "focus_subject": "main visible subject in a few words"
 }"""
 
 
+def _fallback_result(description: str = "") -> dict:
+    return {
+        "scene_type": SceneType.UNKNOWN,
+        "description": description[:200],
+        "has_speech": False,
+        "energy": 0.5,
+        "quality_score": 0.5,
+        "text_on_screen": "",
+        "hook_potential": 0.5,
+        "visual_novelty": 0.5,
+        "focus_subject": "",
+    }
+
+
 async def analyze_frame(image_path: str) -> dict:
-    """Send a single frame to the vision model for analysis."""
+    """Send a single frame to Ollama vision model with fallback retries."""
     with open(image_path, "rb") as f:
         img_b64 = base64.b64encode(f.read()).decode()
 
+    model_chain = [VISION_MODEL] + [m for m in VISION_FALLBACK_MODELS if m != VISION_MODEL]
+
     async with httpx.AsyncClient(timeout=120) as client:
-        resp = await client.post(f"{OLLAMA_URL}/api/generate", json={
-            "model": VISION_MODEL,
-            "prompt": SCENE_ANALYSIS_PROMPT,
-            "images": [img_b64],
-            "stream": False,
-            "options": {"temperature": 0.1},
-        })
-        resp.raise_for_status()
-        data = resp.json()
+        for model in model_chain:
+            try:
+                resp = await client.post(f"{OLLAMA_URL}/api/generate", json={
+                    "model": model,
+                    "prompt": SCENE_ANALYSIS_PROMPT,
+                    "images": [img_b64],
+                    "stream": False,
+                    "options": {"temperature": 0.0},
+                })
+                resp.raise_for_status()
+                data = resp.json()
+                raw = data.get("response", "{}")
 
-    raw = data.get("response", "{}")
-    # Try to parse JSON from response
-    try:
-        # Handle cases where model wraps JSON in markdown
-        if "```" in raw:
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        result = json.loads(raw)
-    except (json.JSONDecodeError, IndexError):
-        result = {
-            "scene_type": "unknown",
-            "description": raw[:200],
-            "has_speech": False,
-            "energy": 0.5,
-            "quality_score": 0.5,
-            "text_on_screen": "",
-        }
+                # Handle markdown-wrapped JSON
+                if "```" in raw:
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
 
-    # Normalize scene_type
-    st = result.get("scene_type", "unknown")
-    try:
-        result["scene_type"] = SceneType(st)
-    except ValueError:
-        result["scene_type"] = SceneType.UNKNOWN
+                result = json.loads(raw)
 
-    return result
+                st = result.get("scene_type", "unknown")
+                try:
+                    result["scene_type"] = SceneType(st)
+                except ValueError:
+                    result["scene_type"] = SceneType.UNKNOWN
+
+                result.setdefault("hook_potential", 0.5)
+                result.setdefault("visual_novelty", 0.5)
+                result.setdefault("focus_subject", "")
+                result["vision_model"] = model
+                return result
+            except Exception:
+                continue
+
+    return _fallback_result("vision analysis failed across all configured models")
 
 
 async def analyze_scenes(thumbnail_paths: list[str], on_progress=None) -> list[dict]:

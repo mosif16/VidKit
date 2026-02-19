@@ -22,6 +22,10 @@ class AgentApiTests(unittest.TestCase):
         self.assertIn("plan", data)
         self.assertIn("score", data)
         self.assertIn("execution", data)
+        self.assertIn("candidates", data)
+        self.assertIn("score_report", data)
+        self.assertIn("edit_suggestions", data)
+        self.assertGreaterEqual(len(data["candidates"]), 1)
 
 
 if __name__ == "__main__":
