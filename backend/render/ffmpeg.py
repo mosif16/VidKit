@@ -50,11 +50,11 @@ def _build_text_filter(overlay, scene_duration: float) -> str:
     pos_map = {
         "center": "(w-text_w)/2:(h-text_h)/2",
         "top": "(w-text_w)/2:h*0.08",
-        "bottom": "(w-text_w)/2:h*0.88",
+        "bottom": "(w-text_w)/2:h*0.82",
         "top-left": "w*0.05:h*0.08",
         "top-right": "w*0.95-text_w:h*0.08",
-        "bottom-left": "w*0.05:h*0.88",
-        "bottom-right": "w*0.95-text_w:h*0.88",
+        "bottom-left": "w*0.05:h*0.82",
+        "bottom-right": "w*0.95-text_w:h*0.82",
     }
     xy = pos_map.get(overlay.position, pos_map["center"])
     x, y = xy.split(":")

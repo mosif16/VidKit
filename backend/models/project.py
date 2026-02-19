@@ -39,7 +39,7 @@ class TranscriptWord:
 @dataclass
 class TextOverlay:
     text: str = ""
-    position: str = "center"  # top, center, bottom, top-left, top-right, bottom-left, bottom-right
+    position: str = "bottom"  # top, center, bottom, top-left, top-right, bottom-left, bottom-right
     start_offset: float = 0.0  # seconds from scene start
     duration: float = 0.0  # 0 = full scene
     font_size: int = 48
