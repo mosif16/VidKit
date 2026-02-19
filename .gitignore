@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Virtual envs
+.venv/
+.venv-tts/
+
+# Build / frontend artifacts
+frontend/dist/
+node_modules/
+
+# Local runtime/data outputs
+projects/
+!projects/.gitkeep
+
+# Uploaded/source media & generated content (never commit)
+**/*.mp4
+**/*.mov
+**/*.m4v
+**/*.avi
+**/*.mkv
+**/*.webm
+**/*.wav
+**/*.mp3
+**/*.m4a
+**/*.aac
+**/*.flac
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.gif
+**/*.webp
+
+# Voice assets/content
+voice_samples/
+voice_templates/*.wav
+voice_templates/*.mp3
+voice_templates/*.m4a
+
+# Temp/logs
+*.log
+.DS_Store
