@@ -1,0 +1,51 @@
+name: repo-guard
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Block media/voice content in git
+        shell: bash
+        run: |
+          set -euo pipefail
+          banned='\.(mp4|mov|m4v|avi|mkv|webm|wav|mp3|m4a|aac|flac|jpg|jpeg|png|gif|webp)$'
+          hits=$(git ls-files | grep -E "$banned" || true)
+          if [ -n "$hits" ]; then
+            echo "❌ Media files detected in repository:" >&2
+            echo "$hits" >&2
+            exit 1
+          fi
+
+      - name: Block likely secret patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Scan tracked files only, exclude lockfiles and docs noise where possible
+          files=$(git ls-files | grep -Ev '(^docs/|\.md$|package-lock\.json$|pnpm-lock\.yaml$|yarn\.lock$)' || true)
+          if [ -z "$files" ]; then
+            echo "No files to scan"
+            exit 0
+          fi
+
+          # Simple high-signal patterns
+          if grep -R -n -E \
+            'ghp_[A-Za-z0-9]{30,}|AIza[0-9A-Za-z_-]{20,}|sk-[A-Za-z0-9]{20,}|xox[baprs]-[A-Za-z0-9-]+' \
+            $files; then
+            echo "❌ Potential secret pattern detected" >&2
+            exit 1
+          fi
+
+          if grep -R -n -E 'BEGIN (RSA|OPENSSH|EC) PRIVATE KEY' $files; then
+            echo "❌ Private key material detected" >&2
+            exit 1
+          fi
+
+          echo "✅ repo-guard passed"
