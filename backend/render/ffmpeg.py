@@ -281,12 +281,54 @@ def render(
             voice_duration = _probe_duration(project.voiceover_path)
             target_duration = video_duration
 
-            # Keep output tightly synced to the visual timeline.
-            # If voiceover is longer, compress it to fit instead of trailing after video.
+            # Keep narration natural: do not aggressively time-warp voice.
+            # Policy:
+            # - max voice speed-up: 1.08x
+            # - max voice slow-down: 0.92x
+            # - if mismatch is larger, extend video by freezing last frame
+            #   so voice can remain natural.
+            max_speedup = 1.08
+            min_slowdown = 0.92
+
+            input_video_path = output_path
+            required_ratio = (voice_duration / video_duration) if video_duration > 0 else 1.0
+
+            if required_ratio > max_speedup:
+                # Voice is much longer than picture. Extend picture duration.
+                extra = voice_duration - video_duration
+                if extra > 0.03:
+                    extended_path = os.path.join(temp_dir, "extended_for_voice.mp4")
+                    extend_cmd = [
+                        "ffmpeg", "-y",
+                        "-i", output_path,
+                        "-vf", f"tpad=stop_mode=clone:stop_duration={extra}",
+                        "-af", "apad",
+                        "-t", str(voice_duration),
+                        "-c:v", "h264_videotoolbox", "-q:v", "65",
+                        "-c:a", "aac", "-b:a", "192k",
+                        extended_path,
+                    ]
+                    ext = subprocess.run(extend_cmd, capture_output=True, text=True, timeout=300)
+                    if ext.returncode != 0:
+                        extend_cmd_sw = [c if c != "h264_videotoolbox" else "libx264" for c in extend_cmd]
+                        extend_cmd_sw = [c if c != "65" else "23" for c in extend_cmd_sw]
+                        ext = subprocess.run(extend_cmd_sw, capture_output=True, text=True, timeout=300)
+                    if ext.returncode == 0 and os.path.exists(extended_path):
+                        input_video_path = extended_path
+                        video_duration = max(_probe_duration(input_video_path), video_duration)
+
+            target_duration = max(video_duration, 0.01)
+            ratio_after_extension = (voice_duration / target_duration) if target_duration > 0 else 1.0
+
             voice_chain = [f"volume={vo_vol}"]
-            if voice_duration > video_duration + 0.03:
-                ratio = voice_duration / video_duration
-                voice_chain.extend(_build_atempo_chain(ratio))
+            # only apply gentle time adjustment in the natural-sounding range
+            if ratio_after_extension > max_speedup:
+                voice_chain.extend(_build_atempo_chain(max_speedup))
+            elif ratio_after_extension < min_slowdown:
+                voice_chain.extend(_build_atempo_chain(min_slowdown))
+            elif abs(ratio_after_extension - 1.0) > 0.015:
+                voice_chain.extend(_build_atempo_chain(ratio_after_extension))
+
             voice_chain.extend(["apad", f"atrim=0:{target_duration}"])
             voice_filter = ",".join(voice_chain)
 
@@ -301,7 +343,7 @@ def render(
 
             vo_cmd = [
                 "ffmpeg", "-y",
-                "-i", output_path,
+                "-i", input_video_path,
                 "-i", project.voiceover_path,
                 "-filter_complex", filter_graph,
                 "-map", "0:v", "-map", "[aout]",
