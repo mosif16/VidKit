@@ -62,6 +62,18 @@ curl http://127.0.0.1:8899/api/health
 5. `POST /api/project/{id}/voiceover`
 6. `POST /api/project/{id}/render`
 
+## AI brain + vision defaults
+
+VidKit now defaults to stronger local AI settings:
+- Vision: `qwen2.5vl:latest` (Ollama)
+- Vision fallbacks: `qwen2.5vl:7b,minicpm-v:latest`
+- Whisper transcription default: `medium`
+
+Override via env vars:
+- `VISION_MODEL`
+- `VISION_FALLBACK_MODELS`
+- `WHISPER_MODEL`
+
 ## Agent Reel Engine API (M1 dry-run)
 
 New endpoint:

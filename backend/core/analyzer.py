@@ -37,7 +37,7 @@ async def analyze_video(
     project_id: str | None = None,
     on_status=None,
     scene_threshold: float = 40.0,
-    whisper_model: str = "base",
+    whisper_model: str = os.getenv("WHISPER_MODEL", "medium"),
 ) -> Project:
     """Full analysis pipeline. Returns a populated Project."""
 
