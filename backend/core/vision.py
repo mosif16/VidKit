@@ -4,9 +4,9 @@ import base64, json, httpx, os
 from backend.models import SceneType
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
-VISION_MODEL = os.getenv("VISION_MODEL", "qwen2.5vl:latest")
+VISION_MODEL = os.getenv("VISION_MODEL", "qwen3-vl:latest")
 VISION_FALLBACK_MODELS = [
-    m.strip() for m in os.getenv("VISION_FALLBACK_MODELS", "qwen2.5vl:7b,minicpm-v:latest").split(",") if m.strip()
+    m.strip() for m in os.getenv("VISION_FALLBACK_MODELS", "qwen3-vl:8b,qwen2.5vl:latest,qwen2.5vl:7b,minicpm-v:latest").split(",") if m.strip()
 ]
 
 SCENE_ANALYSIS_PROMPT = """Analyze this video frame for short-form editing decisions.

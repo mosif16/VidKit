@@ -65,8 +65,8 @@ curl http://127.0.0.1:8899/api/health
 ## AI brain + vision defaults
 
 VidKit now defaults to stronger local AI settings:
-- Vision: `qwen2.5vl:latest` (Ollama)
-- Vision fallbacks: `qwen2.5vl:7b,minicpm-v:latest`
+- Vision: `qwen3-vl:latest` (Ollama)
+- Vision fallbacks: `qwen3-vl:8b,qwen2.5vl:latest,qwen2.5vl:7b,minicpm-v:latest`
 - Whisper transcription default: `medium`
 
 Override via env vars:
