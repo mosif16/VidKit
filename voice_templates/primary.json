@@ -1,0 +1,12 @@
+{
+  "name": "primary",
+  "description": "Primary voice template — expressive, energetic delivery with balanced guidance",
+  "model": "original",
+  "model_note": "ChatterboxTTS (original, NOT Turbo) — uses Classifier-Free Guidance for higher quality",
+  "parameters": {
+    "exaggeration": 0.7,
+    "cfg_weight": 0.5
+  },
+  "reference_sample": "voice_samples/mkbhd.wav",
+  "notes": "Selected by Mohammed on 2026-02-17. Original model with CFG outperforms Turbo for voice cloning quality. Higher exaggeration (0.7) adds energy/emotion without distortion."
+}

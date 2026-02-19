@@ -1,0 +1,10 @@
+fastapi>=0.100.0
+uvicorn>=0.20.0
+python-multipart>=0.0.5
+opencv-python-headless>=4.8.0
+moviepy>=2.0.0
+scenedetect>=0.6.0
+Pillow>=10.0.0
+aiofiles>=23.0.0
+websockets>=12.0
+httpx>=0.25.0
