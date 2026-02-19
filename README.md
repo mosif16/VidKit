@@ -62,6 +62,36 @@ curl http://127.0.0.1:8899/api/health
 5. `POST /api/project/{id}/voiceover`
 6. `POST /api/project/{id}/render`
 
+## Agent Reel Engine API (M1 dry-run)
+
+New endpoint:
+
+- `POST /api/agent/reel`
+
+Purpose:
+- Generate an autonomous reel plan from source + template + objective
+- Return structured dry-run execution report (no real render yet)
+
+Example request:
+
+```json
+{
+  "source_video": "sample.mp4",
+  "template": "viral-hook-v1",
+  "platform": "reels",
+  "objective": "maximize watch-time and shares",
+  "duration_target_sec": 20,
+  "tone": "high-energy"
+}
+```
+
+Response includes:
+- `plan` (hook/cuts/captions/cta)
+- `score` (heuristic virality score)
+- `execution` (pipeline stage statuses + TODO steps)
+
+See `docs/AGENT_REEL_ENGINE_PLAN.md` for milestone roadmap (M1–M4).
+
 ## Engineering Rules
 
 See [AGENTS.md](./AGENTS.md) for mandatory agent workflow, safety limits, validation requirements, and media privacy rules.

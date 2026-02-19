@@ -13,6 +13,7 @@ from backend.api.render import router as render_router
 from backend.api.analyze import router as analyze_router
 from backend.api.voice import router as voice_router
 from backend.api.voiceover import router as voiceover_router
+from backend.api.agent import router as agent_router
 
 app = FastAPI(title="VidKit", version="0.1.0")
 
@@ -38,6 +39,7 @@ app.include_router(render_router, prefix="/api", tags=["render"])
 app.include_router(analyze_router, prefix="/api", tags=["analyze"])
 app.include_router(voice_router, prefix="/api", tags=["voice"])
 app.include_router(voiceover_router, prefix="/api", tags=["voiceover"])
+app.include_router(agent_router, prefix="/api", tags=["agent"])
 
 # Serve TTS output files
 TTS_OUTPUT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "projects", "tts_output")
