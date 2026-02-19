@@ -44,6 +44,13 @@ Never do these unless explicitly asked in the moment:
 ### Mandatory git flow
 Always use: **feature branch → commit → push branch → PR**.
 
+### Main branch commitment (project policy)
+VidKit’s canonical integration branch is `main`.
+
+- All completed work should land in `main` via PR merge.
+- Do not bypass review safety: no direct force-pushes to `main`.
+- Keep branches short-lived and merge quickly so `main` stays the source of truth.
+
 ---
 
 ## Media & Privacy Rules
