@@ -13,6 +13,7 @@ class AgentReelRequest(BaseModel):
     objective: str = Field(default="maximize watch-time and shares")
     duration_target_sec: int = Field(default=20, ge=8, le=60)
     tone: str = Field(default="high-energy")
+    candidates: int = Field(default=3, ge=1, le=5)
 
 
 class HookPlan(BaseModel):
@@ -34,6 +35,7 @@ class CutPlan(BaseModel):
 
 
 class ReelPlan(BaseModel):
+    id: str = "base"
     template: str
     platform: Platform
     objective: str
@@ -50,7 +52,7 @@ class PlanScore(BaseModel):
     pacing: int
     caption_clarity: int
     cta_strength: int
-    notes: list[str] = []
+    notes: list[str] = Field(default_factory=list)
 
 
 class PipelineStageResult(BaseModel):
@@ -69,4 +71,5 @@ class AgentReelResponse(BaseModel):
     status: Literal["ok"] = "ok"
     plan: ReelPlan
     score: PlanScore
+    candidates: list[ReelPlan] = Field(default_factory=list)
     execution: ExecutionReport

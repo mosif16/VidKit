@@ -1,6 +1,7 @@
 """FFmpeg render engine — builds and executes ffmpeg commands from scene map."""
 from __future__ import annotations
 import subprocess, os, tempfile, math
+from functools import lru_cache
 from backend.models import Project, Scene, RenderPreset
 
 
@@ -33,6 +34,17 @@ def _build_atempo_chain(speed: float) -> list[str]:
     return filters
 
 
+@lru_cache(maxsize=1)
+def _drawtext_supported() -> bool:
+    """Check if ffmpeg has drawtext support."""
+    try:
+        res = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], capture_output=True, text=True, timeout=10)
+        out = (res.stdout or "") + (res.stderr or "")
+        return "drawtext" in out
+    except Exception:
+        return False
+
+
 def _build_text_filter(overlay, scene_duration: float) -> str:
     """Build ffmpeg drawtext filter for a text overlay."""
     pos_map = {
@@ -59,7 +71,7 @@ def _build_text_filter(overlay, scene_duration: float) -> str:
     )
 
 
-def _extract_segment(scene: Scene, source_path: str, output_path: str) -> bool:
+def _extract_segment(scene: Scene, source_path: str, output_path: str, allow_text: bool = True) -> bool:
     """Extract and process a single scene segment."""
     has_speed = abs(scene.speed - 1.0) > 0.01
 
@@ -79,8 +91,9 @@ def _extract_segment(scene: Scene, source_path: str, output_path: str) -> bool:
         afilters.extend(_build_atempo_chain(scene.speed))
 
     # Text overlays
-    for overlay in scene.overlays:
-        vfilters.append(_build_text_filter(overlay, scene.duration))
+    if allow_text:
+        for overlay in scene.overlays:
+            vfilters.append(_build_text_filter(overlay, scene.duration))
 
     # Fade in transition
     if scene.transition_in == "fade":
@@ -143,12 +156,16 @@ def render(
         # Extract each scene as a segment
         segment_paths = []
         total = len(project.scenes)
+        text_available = _drawtext_supported()
+        if not text_available and any(scene.overlays for scene in project.scenes) and on_progress:
+            on_progress("Warning: ffmpeg drawtext filter unavailable; rendering without text overlays.")
+
         for i, scene in enumerate(project.scenes):
             if on_progress:
                 on_progress(f"Processing scene {i+1}/{total}...")
 
             seg_path = os.path.join(segments_dir, f"seg_{i:04d}.mp4")
-            success = _extract_segment(scene, project.source_path, seg_path)
+            success = _extract_segment(scene, project.source_path, seg_path, allow_text=text_available)
             if success and os.path.exists(seg_path):
                 segment_paths.append(seg_path)
 

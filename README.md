@@ -86,8 +86,9 @@ Example request:
 ```
 
 Response includes:
-- `plan` (hook/cuts/captions/cta)
-- `score` (heuristic virality score)
+- `plan` (selected best hook/cuts/captions/cta)
+- `candidates` (generated variants considered for ranking)
+- `score` (heuristic virality score for selected plan)
 - `execution` (pipeline stage statuses + TODO steps)
 
 See `docs/AGENT_REEL_ENGINE_PLAN.md` for milestone roadmap (M1–M4).
