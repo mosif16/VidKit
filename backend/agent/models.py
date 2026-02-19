@@ -55,6 +55,38 @@ class PlanScore(BaseModel):
     notes: list[str] = Field(default_factory=list)
 
 
+class FeatureContribution(BaseModel):
+    feature: str
+    value: float
+    weight: float
+    contribution: float
+
+
+class Recommendation(BaseModel):
+    priority: Literal["high", "medium", "low"]
+    action: str
+    expected_lift_range: str
+
+
+class ScoreReport(BaseModel):
+    pqs: float
+    eps: float
+    vps: float
+    feature_contributions: list[FeatureContribution]
+    failed_gates: list[str] = Field(default_factory=list)
+    recommendations: list[Recommendation] = Field(default_factory=list)
+
+
+class EditSuggestion(BaseModel):
+    priority: Literal["high", "medium", "low"]
+    action: str
+    timestamp_hint: str
+
+
+class EditSuggestions(BaseModel):
+    suggestions: list[EditSuggestion] = Field(default_factory=list)
+
+
 class PipelineStageResult(BaseModel):
     stage: str
     status: Literal["ok", "warning", "todo"]
@@ -71,5 +103,7 @@ class AgentReelResponse(BaseModel):
     status: Literal["ok"] = "ok"
     plan: ReelPlan
     score: PlanScore
+    score_report: ScoreReport
+    edit_suggestions: EditSuggestions
     candidates: list[ReelPlan] = Field(default_factory=list)
     execution: ExecutionReport

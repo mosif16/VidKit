@@ -93,6 +93,22 @@ Response includes:
 
 See `docs/AGENT_REEL_ENGINE_PLAN.md` for milestone roadmap (M1–M4).
 
+## Viral scoring config + contracts (v0.1)
+
+VidKit now includes implementation-ready scoring artifacts:
+
+- Config: `backend/config/viral_scoring_weights.json`
+- Schemas:
+  - `backend/schemas/score_report.schema.json`
+  - `backend/schemas/edit_suggestions.schema.json`
+- Spec: `docs/specs/viral_scoring_v0_1.md`
+
+`POST /api/agent/reel` now returns two additional payloads for pipeline compatibility:
+- `score_report` (PQS/EPS/VPS + contributions + recommendations)
+- `edit_suggestions` (ordered timestamp-level action hints)
+
+If scoring config is missing or malformed, backend falls back to safe defaults.
+
 ## Engineering Rules
 
 See [AGENTS.md](./AGENTS.md) for mandatory agent workflow, safety limits, validation requirements, and media privacy rules.
