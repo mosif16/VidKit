@@ -121,6 +121,38 @@ VidKit now includes implementation-ready scoring artifacts:
 
 If scoring config is missing or malformed, backend falls back to safe defaults.
 
+## Local Video Generation (CogVideoX-2B baseline)
+
+Install generation deps:
+
+```bash
+pip install -r requirements.local-generation.txt
+```
+
+New endpoint:
+
+- `POST /api/generate/local-video`
+
+Example payload:
+
+```json
+{
+  "prompt": "Cinematic short vertical video of sunrise over Manhattan skyline",
+  "output_name": "cogvideox_local.mp4",
+  "num_inference_steps": 12,
+  "num_frames": 24,
+  "width": 720,
+  "height": 480,
+  "fps": 8
+}
+```
+
+Benchmark script:
+
+```bash
+python scripts/local_gen_benchmark.py
+```
+
 ## Engineering Rules
 
 See [AGENTS.md](./AGENTS.md) for mandatory agent workflow, safety limits, validation requirements, and media privacy rules.
